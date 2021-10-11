@@ -16,7 +16,7 @@ const DateTimeSection = () => {
   const [endAt, setEndAt] = useState<Date>();
 
   useEffect(() => {
-    if (startAt && endAt) {
+    if (startAt && endAt && startAt < endAt) {
       setDate({ startAt, endAt });
     }
   }, [startAt, endAt]);
