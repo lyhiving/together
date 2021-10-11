@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Head from "next/head";
 import useSwr from "swr";
 import dayjs from "dayjs";
 import { useRouter } from "next/router";
@@ -42,7 +43,7 @@ export interface CreateRoomParams {
 }
 
 const NewRoom = () => {
-  const { user } = useAuthContext();
+  const { user, isLoading, isLoggedIn } = useAuthContext();
   const toast = useToast();
   const router = useRouter();
   const [bannerUrl, setBannerUrl] = useState("");
@@ -64,6 +65,7 @@ const NewRoom = () => {
   });
 
   const startAt = watch("start_at");
+  const endAt = watch("end_at");
   const roomPlatform = watch("room_platform");
 
   const { data: categories } = useSwr("categories", () =>
@@ -72,7 +74,7 @@ const NewRoom = () => {
 
   const onSubmit = async ({ category, ...rest }: CreateRoomParams) => {
     try {
-      await Client.createRoom({
+      const newRoom = await Client.createRoom({
         user_id: user?.id,
         category_id: category,
         banner_url: bannerUrl,
@@ -84,7 +86,7 @@ const NewRoom = () => {
         status: "success",
       });
       reset();
-      router.push("/");
+      router.push(`/room/${newRoom?.id}`);
     } catch (error: any) {
       console.error(error);
       toast({
@@ -105,187 +107,217 @@ const NewRoom = () => {
     }
   }, [startAt]);
 
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.push("/");
+    }
+  }, [isLoggedIn, isLoading]);
+
+  if (isLoading || !isLoggedIn) {
+    return <h2>loading.....</h2>;
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <Container maxW="container.sm" py="10">
-        <Heading>Create new room</Heading>
-        <FormControl
-          id="name"
-          mt="10"
-          isInvalid={!!errors?.name}
-          isDisabled={isSubmitting}
-        >
-          <FormLabel htmlFor="name">Name</FormLabel>
-          <Input
-            placeholder="Room name"
-            type="text"
-            size="lg"
-            {...register("name", {
-              required: VALIDATION_MESSAGES.REQUIRED,
-            })}
-          />
-          <FormErrorMessage>{errors?.name?.message}</FormErrorMessage>
-        </FormControl>
-
-        <FormControl
-          id="category"
-          isInvalid={!!errors?.category}
-          isDisabled={isSubmitting}
-          mt="10"
-        >
-          <FormLabel htmlFor="category">Category</FormLabel>
-          <Select
-            placeholder="Select category"
-            {...register("category", {
-              required: VALIDATION_MESSAGES.REQUIRED,
-            })}
-            size="lg"
+    <>
+      <Head>
+        <title>New room | Together</title>
+      </Head>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Container maxW="container.sm" py="10">
+          <Heading>Create new room</Heading>
+          <FormControl
+            id="name"
+            mt="10"
+            isInvalid={!!errors?.name}
+            isDisabled={isSubmitting}
           >
-            {(categories ?? []).map((category) => (
-              <option value={category.id} key={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
-          <FormErrorMessage>{errors?.category?.message}</FormErrorMessage>
-        </FormControl>
+            <FormLabel htmlFor="name">Name</FormLabel>
+            <Input
+              placeholder="Room name"
+              type="text"
+              size="lg"
+              {...register("name", {
+                required: VALIDATION_MESSAGES.REQUIRED,
+              })}
+            />
+            <FormErrorMessage>{errors?.name?.message}</FormErrorMessage>
+          </FormControl>
 
-        <Controller
-          control={control}
-          name="start_at"
-          rules={{ required: VALIDATION_MESSAGES.REQUIRED }}
-          render={({
-            field: { onChange, onBlur, value, name },
-            fieldState: { invalid },
-          }) => (
-            <FormControl
-              isInvalid={invalid}
-              isRequired
-              mt="10"
-              isDisabled={isSubmitting}
+          <FormControl
+            id="category"
+            isInvalid={!!errors?.category}
+            isDisabled={isSubmitting}
+            mt="10"
+          >
+            <FormLabel htmlFor="category">Category</FormLabel>
+            <Select
+              placeholder="Select category"
+              {...register("category", {
+                required: VALIDATION_MESSAGES.REQUIRED,
+              })}
+              size="lg"
             >
-              <FormLabel htmlFor={name}>Start At</FormLabel>
-              <DatePicker
-                id={name}
-                minDate={new Date()}
-                minTime={new Date()}
-                maxTime={dayjs().endOf("d").toDate()}
-                selected={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                size="lg"
-                showTimeSelect
-              />
-              <FormErrorMessage>{errors?.start_at?.message}</FormErrorMessage>
-            </FormControl>
-          )}
-        />
-        <Controller
-          control={control}
-          name="end_at"
-          rules={{ required: VALIDATION_MESSAGES.REQUIRED }}
-          render={({
-            field: { onChange, onBlur, value, name },
-            fieldState: { invalid },
-          }) => (
-            <FormControl
-              isInvalid={invalid}
-              isRequired
-              mt="10"
-              isDisabled={isSubmitting}
-            >
-              <FormLabel htmlFor={name}>End At</FormLabel>
-              <DatePicker
-                id={name}
-                selected={value}
-                onChange={onChange}
-                onBlur={onBlur}
-                size="lg"
-                showTimeSelect
-                minDate={startAt}
-                minTime={dayjs(startAt).add(10, "m").toDate()}
-                maxTime={
-                  startAt ? dayjs(startAt).endOf("d").toDate() : undefined
-                }
-              />
-              <FormErrorMessage>{errors?.end_at?.message}</FormErrorMessage>
-            </FormControl>
-          )}
-        />
-        <FormControl
-          id="room_url"
-          mt="10"
-          isInvalid={!!errors?.room_url}
-          isDisabled={isSubmitting}
-        >
-          <FormLabel htmlFor="room_url">Room link</FormLabel>
-          <Input
-            placeholder="Room link"
-            type="text"
-            size="lg"
-            {...register("room_url", {
-              required: VALIDATION_MESSAGES.REQUIRED,
-            })}
-          />
-          <FormHelperText>
-            Don't have link an yet?{" "}
-            <Link href={getPlatformUrl(roomPlatform)} isExternal>
-              <Button colorScheme="blue" href="" variant="link" size="sm">
-                Create one
-              </Button>
-            </Link>
-          </FormHelperText>
-          <FormErrorMessage>{errors?.room_url?.message}</FormErrorMessage>
-        </FormControl>
-        <FormControl
-          id="room_platform"
-          mt="10"
-          isInvalid={!!errors?.room_platform}
-          isDisabled={isSubmitting}
-        >
-          <FormLabel htmlFor="room_platform">Room platform</FormLabel>
-          <Select
-            {...register("room_platform", {
-              required: VALIDATION_MESSAGES.REQUIRED,
-            })}
-            size="lg"
-          >
-            {RoomPlatforms.map((platform) => (
-              <option value={platform.value} key={platform.name}>
-                {platform.name}
-              </option>
-            ))}
-          </Select>
-          <FormErrorMessage>{errors?.room_platform?.message}</FormErrorMessage>
-        </FormControl>
-        <FormControl id="description" mt="10" isDisabled={isSubmitting}>
-          <FormLabel htmlFor="description">Description</FormLabel>
-          <Textarea
-            rows={6}
-            placeholder="Description"
-            variant="outline"
-            type="text"
-            size="lg"
-            {...register("description")}
-          />
-        </FormControl>
+              {(categories ?? []).map((category) => (
+                <option value={category.id} key={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+            <FormErrorMessage>{errors?.category?.message}</FormErrorMessage>
+          </FormControl>
 
-        <BannerPicker onChange={handleFileChange} />
-        <Flex justifyContent="center">
-          <Button
-            type="submit"
-            mt="16"
-            size="lg"
-            variant="primary"
-            isLoading={isSubmitting}
-            disabled={isSubmitting}
-            w="50%"
+          <Controller
+            control={control}
+            name="start_at"
+            rules={{ required: VALIDATION_MESSAGES.REQUIRED }}
+            render={({
+              field: { onChange, onBlur, value, name },
+              fieldState: { invalid },
+            }) => (
+              <FormControl
+                isInvalid={invalid}
+                isRequired
+                mt="10"
+                isDisabled={isSubmitting}
+              >
+                <FormLabel htmlFor={name}>Start At</FormLabel>
+                <DatePicker
+                  id={name}
+                  minDate={new Date()}
+                  minTime={
+                    startAt && dayjs(startAt).startOf("d").toDate() > new Date()
+                      ? dayjs().startOf("d").toDate()
+                      : new Date()
+                  }
+                  maxTime={dayjs().endOf("d").toDate()}
+                  selected={value}
+                  onChange={(val) => {
+                    console.log("change", val);
+                    onChange(val);
+                  }}
+                  onBlur={onBlur}
+                  size="lg"
+                  showTimeSelect
+                />
+                <FormErrorMessage>{errors?.start_at?.message}</FormErrorMessage>
+              </FormControl>
+            )}
+          />
+          <Controller
+            control={control}
+            name="end_at"
+            rules={{ required: VALIDATION_MESSAGES.REQUIRED }}
+            render={({
+              field: { onChange, onBlur, value, name },
+              fieldState: { invalid },
+            }) => (
+              <FormControl
+                isInvalid={invalid}
+                isRequired
+                mt="10"
+                isDisabled={isSubmitting}
+              >
+                <FormLabel htmlFor={name}>End At</FormLabel>
+                <DatePicker
+                  id={name}
+                  selected={value}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  size="lg"
+                  showTimeSelect
+                  minDate={startAt}
+                  minTime={
+                    endAt &&
+                    dayjs(endAt).startOf("d").toDate() >
+                      dayjs(startAt).add(10, "m").toDate()
+                      ? dayjs().startOf("d").toDate()
+                      : dayjs(startAt).add(10, "m").toDate()
+                  }
+                  maxTime={
+                    startAt ? dayjs(startAt).endOf("d").toDate() : undefined
+                  }
+                />
+                <FormErrorMessage>{errors?.end_at?.message}</FormErrorMessage>
+              </FormControl>
+            )}
+          />
+          <FormControl
+            id="room_url"
+            mt="10"
+            isInvalid={!!errors?.room_url}
+            isDisabled={isSubmitting}
           >
-            Create Room
-          </Button>
-        </Flex>
-      </Container>
-    </form>
+            <FormLabel htmlFor="room_url">Room link</FormLabel>
+            <Input
+              placeholder="Room link"
+              type="text"
+              size="lg"
+              {...register("room_url", {
+                required: VALIDATION_MESSAGES.REQUIRED,
+              })}
+            />
+            <FormHelperText>
+              Don't have link an yet?{" "}
+              <Link href={getPlatformUrl(roomPlatform)} isExternal>
+                <Button colorScheme="blue" href="" variant="link" size="sm">
+                  Create one
+                </Button>
+              </Link>
+            </FormHelperText>
+            <FormErrorMessage>{errors?.room_url?.message}</FormErrorMessage>
+          </FormControl>
+          <FormControl
+            id="room_platform"
+            mt="10"
+            isInvalid={!!errors?.room_platform}
+            isDisabled={isSubmitting}
+          >
+            <FormLabel htmlFor="room_platform">Room platform</FormLabel>
+            <Select
+              {...register("room_platform", {
+                required: VALIDATION_MESSAGES.REQUIRED,
+              })}
+              size="lg"
+            >
+              {RoomPlatforms.map((platform) => (
+                <option value={platform.value} key={platform.name}>
+                  {platform.name}
+                </option>
+              ))}
+            </Select>
+            <FormErrorMessage>
+              {errors?.room_platform?.message}
+            </FormErrorMessage>
+          </FormControl>
+          <FormControl id="description" mt="10" isDisabled={isSubmitting}>
+            <FormLabel htmlFor="description">Description</FormLabel>
+            <Textarea
+              rows={6}
+              placeholder="Description"
+              variant="outline"
+              type="text"
+              size="lg"
+              {...register("description")}
+            />
+          </FormControl>
+
+          <BannerPicker onChange={handleFileChange} />
+          <Flex justifyContent="center">
+            <Button
+              type="submit"
+              mt="16"
+              size="lg"
+              variant="primary"
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+              w="50%"
+            >
+              Create Room
+            </Button>
+          </Flex>
+        </Container>
+      </form>
+    </>
   );
 };
 

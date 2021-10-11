@@ -1,6 +1,5 @@
 import { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/router";
-import useSwr from "swr";
 import Client, { supabase } from "src/libs/supabase";
 import { useEffect, useState, useCallback } from "react";
 import { createContext } from "src/utils/createContext";
@@ -22,10 +21,9 @@ export interface SignUpParams {
 
 export interface ContextValues {
   user: User | null;
-  session: Session | null;
+  session: Session | null | undefined;
   isLoggedIn?: boolean;
   isLoading?: boolean;
-  isFirstLoading?: boolean;
   login: (params: LoginParams) => any;
   signUp: (params: SignUpParams) => any;
   signOut: () => void;
@@ -36,20 +34,15 @@ const [Provider, useAuthContext] = createContext<ContextValues>();
 
 const AuthContextProvider: React.FC<any> = ({ children }) => {
   const router = useRouter();
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>();
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
 
   const { isOpen, onClose, onOpen: openLoginModal } = useDisclosure();
 
-  const { data, error, mutate } = useSwr(session ? "userInfo" : null, () => {
-    return Client.getUserById(session?.user?.id as string);
-  });
-
-  const isFirstLoading = !user || !error;
-  const isLoading = !data || !error;
-
   const signOut = useCallback(() => {
     setUser(null);
+    router.replace("/");
     return supabase.auth.signOut();
   }, [router]);
 
@@ -76,19 +69,32 @@ const AuthContextProvider: React.FC<any> = ({ children }) => {
         .insert({ id: authUser?.id, name, email: rest.email });
       if (createUserError)
         throw Error(createUserError.message ?? ERROR_MESSAGES.UNKNOWN);
-      mutate();
+      setUser(user);
     }
   }, []);
 
-  useEffect(() => {
-    if (data) {
-      console.log("set user", data);
-      setUser(data);
+  const getUserData = async (session: Session) => {
+    try {
+      const user = await Client.getUserById(session?.user?.id as string);
+      setUser(user);
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [data]);
+  };
+
+  useEffect(() => {
+    if (session) {
+      getUserData(session);
+    }
+  }, [session]);
 
   useEffect(() => {
     const session = supabase.auth.session();
+    if (!session) {
+      setIsLoading(false);
+    }
     setSession(session);
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
@@ -105,7 +111,6 @@ const AuthContextProvider: React.FC<any> = ({ children }) => {
     session,
     isLoggedIn: user !== null,
     isLoading,
-    isFirstLoading,
     signOut,
     login,
     signUp,

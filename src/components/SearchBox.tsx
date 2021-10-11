@@ -1,4 +1,5 @@
 import React from "react";
+import { useRouter } from "next/router";
 import useSwr from "swr";
 import {
   AutoComplete,
@@ -12,6 +13,7 @@ import Client from "src/libs/supabase";
 import { Room } from "src/types/schema";
 
 function App() {
+  const router = useRouter();
   const { data: rooms } = useSwr(["search-all-data"], () => {
     return Client.searchRoom();
   });
@@ -46,6 +48,7 @@ function App() {
                 value={room.name}
                 groupId={category}
                 textTransform="capitalize"
+                onClick={() => router.push(`/room/${room.id}`)}
               >
                 {room.name}
               </AutoCompleteItem>

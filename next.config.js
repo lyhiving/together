@@ -12,7 +12,10 @@ module.exports = withBundleAnalyzer({
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     SUPABASE_URL: process.env.SUPABASE_URL,
   },
-  // eslint: {
-  //   ignoreDuringBuilds: true,
-  // },
+  images: {
+    domains: ['uxpkwnwwzvnivsgmwxtl.supabase.co', 'placeimg.com']
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 });
