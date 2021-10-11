@@ -1,10 +1,11 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Box,
   Text,
   Stack,
   HStack,
-  Image,
+  // Image,
   AspectRatio,
   Skeleton,
 } from "@chakra-ui/react";
@@ -30,8 +31,9 @@ const RoomCard = ({ room }: RoomCardProps) => {
       >
         <AspectRatio w="full" ratio={16 / 9} overflow="hidden">
           <Image
-            src={banner_url}
-            fallbackSrc="/assets/images/room-banner.jpg"
+            layout="fill"
+            src={banner_url as string}
+            // fallbackSrc="/assets/images/room-banner.jpg"
           />
         </AspectRatio>
         <HStack w="full" my="4" spacing="4" px="4">

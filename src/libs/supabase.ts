@@ -35,7 +35,9 @@ class Client {
   async createRoom(room: Partial<Room>) {
     const { error, data } = await supabase.from<Room>("rooms").insert(room);
     if (error) throw error;
-    return data;
+    if (!Array.isArray(data) || data.length === 0)
+      throw new Error("Room not found");
+    return data[0];
   }
 
   async getRooms(filter: RoomFilter, { from = 0, to = 14 }: RoomPagination) {
