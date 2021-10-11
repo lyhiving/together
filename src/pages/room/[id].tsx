@@ -18,6 +18,11 @@ import { FaCalendarAlt } from "react-icons/fa";
 import PlatformIcon from "src/components/PlatformIcon";
 import RoomSkeleton from "src/components/pages/room/RoomSkeleton";
 import AddCalendarButton from "src/components/pages/room/AddCalendarButton";
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  LinkedinShareButton,
+} from "src/components/SocialSharing";
 import Client from "src/libs/supabase";
 import { getPlatformName } from "src/utils/platform";
 import { Room } from "src/types/schema";
@@ -50,6 +55,17 @@ const RoomDetail = () => {
               src={room?.banner_url}
             />
           </Box>
+          <HStack w="85%" justifyContent="center" spacing="4" mt="30px">
+            <FacebookShareButton
+              url={`${process.env.APP_URL}/room/${room?.id}`}
+            />
+            <TwitterShareButton
+              url={`${process.env.APP_URL}/room/${room?.id}`}
+            />
+            <LinkedinShareButton
+              url={`${process.env.APP_URL}/room/${room?.id}`}
+            />
+          </HStack>
         </Box>
         <Box w="50%" p="10">
           <Heading>{room?.name}</Heading>

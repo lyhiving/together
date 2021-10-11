@@ -23,7 +23,7 @@ const Home = () => {
         {
           categories,
           platforms,
-          start_at: date.startDate,
+          start_at: date.startAt,
           end_at: date.endAt,
         },
         {

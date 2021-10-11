@@ -11,6 +11,7 @@ module.exports = withBundleAnalyzer({
   env: {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     SUPABASE_URL: process.env.SUPABASE_URL,
+    APP_URL: process.env.APP_URL,
   },
   images: {
     domains: ['uxpkwnwwzvnivsgmwxtl.supabase.co', 'placeimg.com']
